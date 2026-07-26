@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>极客工作台 · 手机版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ===== 全局重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0b0e14;
+            min-height: 100vh;
+            padding-bottom: 80px; /* 为底部导航留空间 */
+            color: #eef2f6;
+            background-image: radial-gradient(circle at 20% 30%, #1a2a3a 0%, #0b0e14 70%);
+        }
+
+        /* ===== 主内容 ===== */
+        .main {
+            padding: 16px 16px 20px;
+            max-width: 600px;  /* 手机宽度舒适阅读 */
+            margin: 0 auto;
+        }
+        .page {
+            display: none;
+            animation: fadeUp 0.25s ease;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(12px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== 卡片 ===== */
+        .glass-card {
+            background: rgba(30, 40, 55, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 20px 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #b0c8e0;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title i {
+            color: #6fc3ff;
+            font-size: 18px;
+        }
+
+        /* ===== 底部导航 (移动端) ===== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(20, 28, 40, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 env(safe-area-inset-bottom, 8px);
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+        }
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: #8899b0;
+            font-size: 22px;
+            padding: 6px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.15s;
+            min-width: 60px;
+            border-radius: 12px;
+            touch-action: manipulation;
+        }
+        .nav-btn span {
+            font-size: 10px;
+            margin-top: 2px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+        .nav-btn.active {
+            color: #6fc3ff;
+            background: rgba(111, 195, 255, 0.1);
+        }
+        .nav-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* ===== 待办 ===== */
+        .todo-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .todo-input-group input {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            min-height: 48px;
+        }
+        .todo-input-group button {
+            padding: 0 24px;
+            border-radius: 40px;
+            border: none;
+            background: #6fc3ff;
+            color: #0b0e14;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            min-height: 48px;
+            white-space: nowrap;
+        }
+        .todo-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .todo-list li {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 14px;
+            gap: 12px;
+            min-height: 52px;
+        }
+        .todo-list li .todo-text {
+            flex: 1;
+            font-size: 15px;
+            cursor: pointer;
+            user-select: none;
+            word-break: break-word;
+        }
+        .todo-list li .todo-text.done {
+            text-decoration: line-through;
+            color: #6a7b8c;
+        }
+        .todo-list li .del-todo {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 20px;
+            padding: 8px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .todo-footer {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #7a8fa3;
+        }
+
+        /* ===== 导航 ===== */
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .nav-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 16px 8px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: 0.1s;
+            position: relative;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-card a {
+            text-decoration: none;
+            color: #d6e5f5;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+        }
+        .nav-card a i {
+            font-size: 30px;
+            color: #6fc3ff;
+        }
+        .nav-card .del-nav {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 16px;
+            padding: 8px;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        .add-nav-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .add-nav-form input {
+            padding: 14px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            min-height: 48px;
+        }
+        .add-nav-form button {
+            padding: 14px;
+            border-radius: 30px;
+            border: none;
+            background: #4a5b6e;
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+            min-height: 48px;
+        }
+
+        /* ===== 英语词汇 ===== */
+        .vocab-level {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .vocab-level button {
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: #b0c8e0;
+            font-size: 14px;
+            cursor: pointer;
+            flex: 1;
+            min-height: 44px;
+            min-width: 70px;
+        }
+        .vocab-level button.active-lv {
+            background: #6fc3ff;
+            color: #0b0e14;
+            border-color: #6fc3ff;
+            font-weight: 600;
+        }
+        .flashcard {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .flashcard .word {
+            font-size: 30px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .flashcard .meaning {
+            font-size: 20px;
+            color: #b0c8e0;
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .flashcard .meaning.show {
+            opacity: 1;
+        }
+        .flashcard .hint {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #5a6f84;
+        }
+        .flash-ctrl {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .flash-ctrl button {
+            flex: 1;
+            padding: 14px 0;
+            border-radius: 40px;
+            border: none;
+            background: rgba(255, 255, 255, 0.06);
+            color: #d6e5f5;
+            font-size: 16px;
+            cursor: pointer;
+            min-height: 48px;
+        }
+
+        /* ===== 视频 ===== */
+        .video-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .video-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .video-item iframe {
+            width: 100%;
+            height: 200px;
+            border: none;
+            background: #000;
+        }
+        .video-item .v-info {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .video-item .v-info span {
+            font-size: 14px;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
+        .video-item .v-info button {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 18px;
+            padding: 8px;
+            cursor: pointer;
+        }
+        .add-video-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .add-video-form input {
+            padding: 14px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            min-height: 48px;
+        }
+        .add-video-form button {
+            padding: 14px;
+            border-radius: 30px;
+            border: none;
+            background: #4a5b6e;
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+            min-height: 48px;
+        }
+
+        /* ===== 便签 ===== */
+        .sticky-note textarea {
+            width: 100%;
+            min-height: 240px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 18px;
+            color: #eef2f6;
+            font-size: 15px;
+            line-height: 1.7;
+            resize: vertical;
+            outline: none;
+        }
+
+        /* ===== 滚动条美化 ===== */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3a4b5e; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 主内容 ===== -->
+    <div class="main">
+
+        <!-- 待办页 -->
+        <div id="page-todo" class="page active">
+            <div class="glass-card">
+                <div class="card-title"><i class="fas fa-check-circle"></i> 今日待办</div>
+                <div class="todo-input-group">
+                    <input id="todoInput" placeholder="写一项任务..." />
+                    <button id="addTodoBtn"><i class="fas fa-plus"></i> 添加</button>
+                </div>
+                <ul class="todo-list" id="todoList"></ul>
+                <div class="todo-footer" id="todoFooter">还剩 0 项未完成</div>
+            </div>
+        </div>
+
+        <!-- 导航页 -->
+        <div id="page-nav" class="page">
+            <div class="glass-card">
+                <div class="card-title"><i class="fas fa-compass"></i> 快捷导航</div>
+                <div class="nav-grid" id="navGrid"></div>
+                <div class="add-nav-form">
+                    <input id="navName" placeholder="名称 (如 知乎)" />
+                    <input id="navUrl" placeholder="网址 (如 https://zhihu.com)" />
+                    <button id="addNavBtn"><i class="fas fa-plus"></i> 添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 英语页 -->
+        <div id="page-english" class="page">
+            <!-- 词汇 -->
+            <div class="glass-card">
+                <div class="card-title"><i class="fas fa-book-open"></i> 词汇闪卡 · 点击翻转</div>
+                <div class="vocab-level" id="levelBtns">
+                    <button class="active-lv" data-level="cet4">CET-4</button>
+                    <button data-level="cet6">CET-6</button>
+                    <button data-level="ielts">IELTS</button>
+                </div>
+                <div class="flashcard" id="flashcard">
+                    <div class="word" id="wordDisplay">abandon</div>
+                    <div class="meaning" id="meaningDisplay">放弃；遗弃</div>
+                    <div class="hint">👆 点击卡片查看释义</div>
+                </div>
+                <div class="flash-ctrl">
+                    <button id="prevWord"><i class="fas fa-chevron-left"></i> 上一个</button>
+                    <button id="nextWord">下一个 <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <!-- 视频 -->
+            <div class="glass-card">
+                <div class="card-title"><i class="fas fa-video"></i> 英语讲座 / 口语视频</div>
+                <div class="add-video-form">
+                    <input id="videoName" placeholder="视频标题 (如 TED演讲)" />
+                    <input id="videoUrl" placeholder="粘贴B站或视频链接" />
+                    <button id="addVideoBtn"><i class="fas fa-plus"></i> 添加</button>
+                </div>
+                <div class="video-grid" id="videoGrid"></div>
+            </div>
+        </div>
+
+        <!-- 便签页 -->
+        <div id="page-note" class="page">
+            <div class="glass-card sticky-note">
+                <div class="card-title"><i class="fas fa-pen-fancy"></i> 便签本 (自动保存)</div>
+                <textarea id="noteContent" placeholder="写点灵感、日记或学习笔记..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 底部导航 ===== -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-btn active" data-page="todo"><i class="fas fa-list-ul"></i><span>待办</span></button>
+        <button class="nav-btn" data-page="nav"><i class="fas fa-compass"></i><span>导航</span></button>
+        <button class="nav-btn" data-page="english"><i class="fas fa-graduation-cap"></i><span>英语</span></button>
+        <button class="nav-btn" data-page="note"><i class="fas fa-sticky-note"></i><span>便签</span></button>
+    </nav>
+
+    <script>
+        // ================================================================
+        //  数据层 (与之前完全一致)
+        // ================================================================
+        const DATA = {
+            todos: JSON.parse(localStorage.getItem('mytodos')) || [],
+            navs: JSON.parse(localStorage.getItem('mynavs')) || [
+                { name: 'GitHub', url: 'https://github.com', icon: 'fab fa-github' },
+                { name: 'B站', url: 'https://bilibili.com', icon: 'fab fa-bilibili' },
+                { name: '翻译', url: 'https://translate.google.com', icon: 'fas fa-language' }
+            ],
+            videos: JSON.parse(localStorage.getItem('myvideos')) || [],
+            note: localStorage.getItem('mynote') || '',
+            currentLevel: 'cet4',
+            currentIndex: 0
+        };
+
+        const WORDS = {
+            cet4: [
+                { word: 'abandon', meaning: '放弃；遗弃' },
+                { word: 'absorb', meaning: '吸收；吸引' },
+                { word: 'academic', meaning: '学术的；学院的' },
+                { word: 'access', meaning: '通道；接近' },
+                { word: 'accommodate', meaning: '容纳；提供住处' }
+            ],
+            cet6: [
+                { word: 'ambiguous', meaning: '模棱两可的' },
+                { word: 'appreciable', meaning: '可感知的' },
+                { word: 'arbitrary', meaning: '随意的；专断的' },
+                { word: 'authentic', meaning: '真正的；可信的' },
+                { word: 'bureaucracy', meaning: '官僚主义' }
+            ],
+            ielts: [
+                { word: 'paradigm', meaning: '范例；范式' },
+                { word: 'empirical', meaning: '经验主义的' },
+                { word: 'sustainable', meaning: '可持续的' },
+                { word: 'diverse', meaning: '多样的；不同的' },
+                { word: 'integrate', meaning: '整合；融入' }
+            ]
+        };
+
+        function saveAll() {
+            localStorage.setItem('mytodos', JSON.stringify(DATA.todos));
+            localStorage.setItem('mynavs', JSON.stringify(DATA.navs));
+            localStorage.setItem('myvideos', JSON.stringify(DATA.videos));
+            localStorage.setItem('mynote', DATA.note);
+        }
+
+        // ================================================================
+        //  渲染函数 (同前，微调触摸)
+        // ================================================================
+        function renderTodos() {
+            const list = document.getElementById('todoList');
+            const footer = document.getElementById('todoFooter');
+            const undone = DATA.todos.filter(t => !t.done).length;
+            list.innerHTML = DATA.todos.map((t, i) => `
+                <li>
+                    <span class="todo-text ${t.done ? 'done' : ''}" onclick="toggleTodo(${i})">${t.text}</span>
+                    <button class="del-todo" onclick="delTodo(${i})"><i class="fas fa-times"></i></button>
+                </li>
+            `).join('');
+            footer.textContent = `还剩 ${undone} 项未完成`;
+        }
+        window.toggleTodo = function(i) {
+            DATA.todos[i].done = !DATA.todos[i].done;
+            saveAll();
+            renderTodos();
+        };
+        window.delTodo = function(i) {
+            DATA.todos.splice(i, 1);
+            saveAll();
+            renderTodos();
+        };
+        document.getElementById('addTodoBtn').addEventListener('click', function() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (!text) return;
+            DATA.todos.push({ text, done: false });
+            saveAll();
+            renderTodos();
+            input.value = '';
+        });
+        document.getElementById('todoInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('addTodoBtn').click();
+        });
+
+        function renderNavs() {
+            const grid = document.getElementById('navGrid');
+            grid.innerHTML = DATA.navs.map((n, i) => `
+                <div class="nav-card">
+                    <a href="${n.url}" target="_blank">
+                        <i class="${n.icon || 'fas fa-globe'}"></i>
+                        <span>${n.name}</span>
+                    </a>
+                    <button class="del-nav" onclick="delNav(${i})"><i class="fas fa-minus-circle"></i></button>
+                </div>
+            `).join('');
+        }
+        window.delNav = function(i) {
+            DATA.navs.splice(i, 1);
+            saveAll();
+            renderNavs();
+        };
+        document.getElementById('addNavBtn').addEventListener('click', function() {
+            const name = document.getElementById('navName').value.trim();
+            const url = document.getElementById('navUrl').value.trim();
+            if (!name || !url) return alert('请填写名称和网址');
+            let icon = 'fas fa-globe';
+            if (url.includes('github')) icon = 'fab fa-github';
+            else if (url.includes('bilibili') || url.includes('b站')) icon = 'fab fa-bilibili';
+            else if (url.includes('youtube')) icon = 'fab fa-youtube';
+            else if (url.includes('zhihu')) icon = 'fab fa-zhihu';
+            DATA.navs.push({ name, url, icon });
+            saveAll();
+            renderNavs();
+            document.getElementById('navName').value = '';
+            document.getElementById('navUrl').value = '';
+        });
+
+        function renderWord() {
+            const level = DATA.currentLevel;
+            const list = WORDS[level] || [];
+            if (list.length === 0) return;
+            if (DATA.currentIndex >= list.length) DATA.currentIndex = 0;
+            if (DATA.currentIndex < 0) DATA.currentIndex = list.length - 1;
+            const item = list[DATA.currentIndex];
+            document.getElementById('wordDisplay').textContent = item.word;
+            const meaningEl = document.getElementById('meaningDisplay');
+            meaningEl.textContent = item.meaning;
+            meaningEl.classList.remove('show');
+        }
+        document.getElementById('flashcard').addEventListener('click', function() {
+            document.getElementById('meaningDisplay').classList.toggle('show');
+        });
+        document.querySelectorAll('#levelBtns button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#levelBtns button').forEach(b => b.classList.remove('active-lv'));
+                this.classList.add('active-lv');
+                DATA.currentLevel = this.dataset.level;
+                DATA.currentIndex = 0;
+                renderWord();
+            });
+        });
+        document.getElementById('prevWord').addEventListener('click', function() {
+            DATA.currentIndex--;
+            renderWord();
+        });
+        document.getElementById('nextWord').addEventListener('click', function() {
+            DATA.currentIndex++;
+            renderWord();
+        });
+
+        function renderVideos() {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = DATA.videos.map((v, i) => {
+                let embedUrl = v.url;
+                if (v.url.includes('bilibili.com') || v.url.includes('b23.tv')) {
+                    const match = v.url.match(/BV([a-zA-Z0-9]+)/);
+                    if (match) {
+                        embedUrl = `https://player.bilibili.com/player.html?bvid=BV${match[1]}&page=1&high_quality=1&autoplay=0`;
+                    }
+                }
+                return `
+                    <div class="video-item">
+                        <iframe src="${embedUrl}" allowfullscreen loading="lazy"></iframe>
+                        <div class="v-info">
+                            <span title="${v.name}">${v.name}</span>
+                            <button onclick="delVideo(${i})"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        window.delVideo = function(i) {
+            DATA.videos.splice(i, 1);
+            saveAll();
+            renderVideos();
+        };
+        document.getElementById('addVideoBtn').addEventListener('click', function() {
+            const name = document.getElementById('videoName').value.trim();
+            const url = document.getElementById('videoUrl').value.trim();
+            if (!name || !url) return alert('请填写标题和链接');
+            DATA.videos.push({ name, url });
+            saveAll();
+            renderVideos();
+            document.getElementById('videoName').value = '';
+            document.getElementById('videoUrl').value = '';
+        });
+
+        const noteArea = document.getElementById('noteContent');
+        noteArea.value = DATA.note;
+        noteArea.addEventListener('input', function() {
+            DATA.note = this.value;
+            localStorage.setItem('mynote', DATA.note);
+        });
+
+        // ================================================================
+        //  底部导航切换
+        // ================================================================
+        document.querySelectorAll('#bottomNav .nav-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#bottomNav .nav-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const pageId = 'page-' + this.dataset.page;
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(pageId).classList.add('active');
+            });
+        });
+
+        // ================================================================
+        //  初始化
+        // ================================================================
+        renderTodos();
+        renderNavs();
+        renderVideos();
+        renderWord();
+        console.log('📱 手机版工作台已启动！');
+    </script>
+</body>
+</html>
